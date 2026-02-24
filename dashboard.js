@@ -536,7 +536,7 @@ function dashboardHTML() {
         // Open report if generated
         if (data.scan?.reportFile) {
           const reportName = data.scan.reportFile.split('/').pop();
-          window.open('/reports/' + reportName, '_blank');
+          window.open('/reports/' + reportName, '_blank', 'noopener,noreferrer');
         }
       } catch (e) {
         hideOverlay();
@@ -568,7 +568,7 @@ function dashboardHTML() {
 
         if (data.reportFile) {
           const reportName = data.reportFile.split('/').pop();
-          window.open('/reports/' + reportName, '_blank');
+          window.open('/reports/' + reportName, '_blank', 'noopener,noreferrer');
         }
       } catch (e) {
         hideOverlay();
