@@ -183,12 +183,18 @@ function dashboardHTML() {
     .path-input::placeholder { color: var(--text-muted); }
     .path-input:focus { border-color: var(--accent-solid); }
 
-    .add-btn, .scan-btn, .scan-now-btn {
+    .add-btn, .scan-btn, .scan-now-btn, .browse-btn {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 12px 24px; border: none; border-radius: 12px;
       font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
       cursor: pointer; transition: all 0.2s; white-space: nowrap;
     }
+
+    .browse-btn {
+      background: var(--bg-secondary); color: var(--text-primary);
+      border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .browse-btn:hover { background: rgba(255,255,255,0.05); transform: translateY(-1px); }
 
     .add-btn {
       background: var(--accent-gradient); color: #fff;
@@ -424,7 +430,10 @@ function dashboardHTML() {
           placeholder="/Users/you/projects/my-app"
           autocomplete="off" spellcheck="false"
         />
-        <button class="add-btn" onclick="addProject()">
+        <button class="browse-btn" onclick="browseFolder()" type="button">
+          📁 Browse...
+        </button>
+        <button class="add-btn" onclick="addProject()" type="button">
           <span>+</span> Add & Scan
         </button>
       </div>
@@ -480,6 +489,19 @@ function dashboardHTML() {
       const res = await fetch(API + '/api/projects');
       const data = await res.json();
       renderProjects(data.projects);
+    }
+
+    // Browse for a folder natively
+    async function browseFolder() {
+      try {
+        const res = await fetch(API + '/api/browse');
+        const data = await res.json();
+        if (data.path) {
+          document.getElementById('pathInput').value = data.path;
+        }
+      } catch (e) {
+        showToast('Local folder picker failed', true);
+      }
     }
 
     // Add project
@@ -682,6 +704,21 @@ const server = http.createServer((req, res) => {
     } else {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('Report not found');
+    }
+    return;
+  }
+
+  // API: Browse for folder (macOS only)
+  if (url.pathname === '/api/browse' && method === 'GET') {
+    try {
+      // Use osascript to open native folder picker silently
+      const cmd = `osascript -e 'try' -e 'return POSIX path of (choose folder with prompt "Select a project to scan:")' -e 'end try'`;
+      const result = execSync(cmd, { encoding: 'utf-8' }).trim();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ path: result }));
+    } catch (e) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ path: '' })); // User cancelled or error
     }
     return;
   }
