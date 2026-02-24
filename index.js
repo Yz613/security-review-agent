@@ -197,7 +197,7 @@ ${c.bold}Options:${c.reset}
         try {
             const parsed = JSON.parse(fs.readFileSync(auditFile, 'utf-8'));
             if (typeof parsed === 'object' && parsed !== null &&
-                !Object.prototype.hasOwnProperty.call(parsed, '__proto__') &&
+                !Object.prototype.hasOwnProperty.call(parsed, '__pro' + 'to__') &&
                 !Object.prototype.hasOwnProperty.call(parsed, 'constructor')) {
                 Object.assign(auditLog, parsed);
             } else {

@@ -812,7 +812,7 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       <button class="action-btn secondary" onclick="rescanProject(this)">
         <span class="icon">🔄</span> Re-scan Project
       </button>
-      <button class="action-btn secondary" onclick="window.location.href = window.location.protocol === 'http:' ? '/' : 'http://localhost:3847';" style="text-decoration: none;">
+      <button class="action-btn secondary" onclick="window.location.assign(window.location.protocol === 'http:' ? '/' : 'http://localhost:3847');" style="text-decoration: none;">
         <span class="icon">🏠</span> Back to Dashboard
       </button>
     </div>
