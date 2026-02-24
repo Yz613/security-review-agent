@@ -9,6 +9,15 @@
   "scripts": {
     "scan": "node index.js"
   },
-  "keywords": ["security", "scanner", "web", "vulnerability"],
-  "license": "MIT"
+  "keywords": [
+    "security",
+    "scanner",
+    "web",
+    "vulnerability"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "dompurify": "^3.3.1",
+    "jsdom": "^28.1.0"
+  }
 }
