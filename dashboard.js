@@ -614,7 +614,6 @@ function dashboardHTML() {
       const projectsHtml = projects.map((p, i) => {
         const name = p.path.split('/').pop();
         const reports = p.reports || [];
-        const historyId = 'history-' + i;
         const encodedPath = btoa(unescape(encodeURIComponent(p.path)));
 
         let scoreBadge = '';
@@ -641,8 +640,8 @@ function dashboardHTML() {
             '</div>' +
           '</div>' +
           (reports.length > 0 ? '<div class="history-section">' +
-            '<button class="history-toggle" data-action="toggle" data-target="' + historyId + '">📂 ' + reports.length + ' past scan' + (reports.length !== 1 ? 's' : '') + ' ▸</button>' +
-            '<div class="history-list" id="' + historyId + '">' + historyItems + '</div>' +
+            '<button class="history-toggle" data-action="toggle">📂 ' + reports.length + ' past scan' + (reports.length !== 1 ? 's' : '') + ' ▸</button>' +
+            '<div class="history-list">' + historyItems + '</div>' +
           '</div>' : '') +
         '</div>';
       }).join('');
@@ -667,8 +666,8 @@ function dashboardHTML() {
       } else if (action === 'remove') {
         removeProject(decodePath(btn.dataset.path));
       } else if (action === 'toggle') {
-        const el = document.getElementById(btn.dataset.target);
-        if (el) el.classList.toggle('show');
+        const el = btn.nextElementSibling;
+        if (el && el.classList.contains('history-list')) el.classList.toggle('show');
       }
     });
 
