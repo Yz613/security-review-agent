@@ -773,13 +773,13 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       <button class="action-btn primary" onclick="copyFixAll(this)">
         <span class="icon">⚡</span> Fix All
       </button>
-      <button class="action-btn secondary" onclick="exportCSV(this)">
-        <span class="icon">📥</span> Export CSV
-      </button>
       <button class="action-btn secondary" onclick="copyHowTo100(this)">
         <span class="icon">🚀</span> How to get to 100?
       </button>
       ` : ''}
+      <button class="action-btn secondary" onclick="exportCSV(this)">
+        <span class="icon">📥</span> Export CSV
+      </button>
       <button class="action-btn secondary" onclick="rescanProject(this)">
         <span class="icon">🔄</span> Re-scan Project
       </button>

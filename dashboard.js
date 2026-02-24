@@ -607,7 +607,7 @@ function dashboardHTML() {
 
       if (projects.length === 0) {
         list.replaceChildren();
-        list['insertAdjacent' + 'HTML']('beforeend', DOMPurify.sanitize('<div class="empty-state"><div class="icon">📂</div><p>No projects yet. Add one above to get started!</p></div>'));
+        list['insertAdjacent' + 'HTML']('beforeend', DOMPurify.sanitize('<div class="empty-state"><div class="icon">📂</div><p>No projects yet. Add one above to get started!</p></div>', { ADD_ATTR: ['target', 'data-action', 'data-path', 'data-target', 'id'] }));
         return;
       }
 
@@ -648,7 +648,7 @@ function dashboardHTML() {
       }).join('');
       
       list.replaceChildren();
-      list['insertAdjacent' + 'HTML']('beforeend', DOMPurify.sanitize(projectsHtml));
+      list['insertAdjacent' + 'HTML']('beforeend', DOMPurify.sanitize(projectsHtml, { ADD_ATTR: ['target', 'data-action', 'data-path', 'data-target', 'id'] }));
     }
 
     // Decode path from base64
