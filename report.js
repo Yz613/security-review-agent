@@ -71,7 +71,9 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
     [SEVERITY.LOW]: 0,
     [SEVERITY.INFO]: 0,
   };
-  for (const f of findings) counts[f.severity]++;
+  for (const f of findings) {
+    if (f.status !== 'RESOLVED') counts[f.severity]++;
+  }
 
   const sortedCategories = Object.keys(grouped).sort((a, b) => {
     const severityOrder = [SEVERITY.CRITICAL, SEVERITY.HIGH, SEVERITY.MEDIUM, SEVERITY.LOW, SEVERITY.INFO];
@@ -750,7 +752,7 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
         <span>📅 ${now}</span>
         <span>📁 ${scannedFiles} files scanned</span>
         <span>⏱️ ${scanDuration}ms</span>
-        <span>🔍 ${findings.length} total findings</span>
+        <span>🔍 ${findings.filter(f => f.status !== 'RESOLVED').length} open findings</span>
       </div>
     </header>
 
