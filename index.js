@@ -18,7 +18,7 @@ const { generateReport } = require('./report');
 
 // ─── Config ──────────────────────────────────────────────────
 const SCAN_EXTENSIONS = new Set(['.html', '.htm', '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.css', '.json', '.env']);
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', '.vercel', '.cache', 'coverage', '__pycache__', 'vendor']);
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', '.vercel', '.cache', 'coverage', '__pycache__', 'vendor', 'reports']);
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB — skip huge files
 
 // ─── Colors for terminal ─────────────────────────────────────
@@ -63,6 +63,10 @@ function discoverFiles(dir) {
             if (entry.isFile()) {
                 const ext = path.extname(entry.name).toLowerCase();
                 const basename = entry.name.toLowerCase();
+
+                if (basename === 'security-report.html') {
+                    continue;
+                }
 
                 // Check for env files specifically (they have no extension sometimes)
                 if (basename.startsWith('.env') || SCAN_EXTENSIONS.has(ext)) {

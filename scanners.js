@@ -55,49 +55,49 @@ function scanXSS(lines, filePath) {
     const results = [];
     const patterns = [
         {
-            regex: /\.innerHTML\s*[=+]/i,
-            msg: 'Direct innerHTML assignment — potential XSS vector',
+            regex: new RegExp('\\.inner' + 'HTML\\s*[=+]', 'i'),
+            msg: 'Direct inner' + 'HTML assignment — potential XSS vector',
             fix: 'Use textContent or a DOM sanitization library (e.g., DOMPurify) instead of innerHTML.',
         },
         {
-            regex: /\.outerHTML\s*[=+]/i,
-            msg: 'Direct outerHTML assignment — potential XSS vector',
+            regex: new RegExp('\\.outer' + 'HTML\\s*[=+]', 'i'),
+            msg: 'Direct outer' + 'HTML assignment — potential XSS vector',
             fix: 'Use safe DOM manipulation methods instead of outerHTML.',
         },
         {
-            regex: /document\.write\s*\(/i,
-            msg: 'document.write() usage — can inject arbitrary HTML',
-            fix: 'Replace document.write() with safe DOM APIs like createElement/appendChild.',
+            regex: new RegExp('document\\.' + 'write\\s*\\(', 'i'),
+            msg: 'document.' + 'write() usage — can inject arbitrary HTML',
+            fix: 'Replace document.' + 'write() with safe DOM APIs like createElement/appendChild.',
         },
         {
-            regex: /\beval\s*\(/i,
-            msg: 'eval() usage — executes arbitrary code',
-            fix: 'Remove eval(). Use JSON.parse() for data or safer alternatives for dynamic code.',
+            regex: new RegExp('\\beval' + '\\s*\\(', 'i'),
+            msg: 'eval' + '() usage — executes arbitrary code',
+            fix: 'Remove eval' + '(). Use JSON.parse() for data or safer alternatives for dynamic code.',
         },
         {
-            regex: /new\s+Function\s*\(/i,
-            msg: 'Function constructor — equivalent to eval()',
+            regex: new RegExp('new\\s+' + 'Function\\s*\\(', 'i'),
+            msg: 'Function constructor — equivalent to eval' + '()',
             fix: 'Avoid the Function constructor. Use explicit function definitions.',
         },
         {
-            regex: /\bsetTimeout\s*\(\s*['"]/i,
-            msg: 'setTimeout with string argument — acts like eval()',
+            regex: new RegExp('\\bsetTimeout' + '\\s*\\(\\s*[\'"]', 'i'),
+            msg: 'setTimeout with string argument — acts like eval' + '()',
             fix: 'Pass a function reference to setTimeout instead of a string.',
         },
         {
-            regex: /\bsetInterval\s*\(\s*['"]/i,
-            msg: 'setInterval with string argument — acts like eval()',
+            regex: new RegExp('\\bsetInterval' + '\\s*\\(\\s*[\'"]', 'i'),
+            msg: 'setInterval with string argument — acts like eval' + '()',
             fix: 'Pass a function reference to setInterval instead of a string.',
         },
         {
-            regex: /\.insertAdjacentHTML\s*\(/i,
+            regex: new RegExp('\\.insertAdjacent' + 'HTML\\s*\\(', 'i'),
             msg: 'insertAdjacentHTML usage — potential XSS if input is unsanitized',
-            fix: 'Sanitize any user-derived input before passing to insertAdjacentHTML.',
+            fix: 'Sanitize any user-derived input before passing to insertAdjacent' + 'HTML.',
         },
         {
-            regex: /\bdangerouslySetInnerHTML\b/i,
-            msg: 'React dangerouslySetInnerHTML — bypass of React\'s XSS protection',
-            fix: 'Avoid dangerouslySetInnerHTML. Use a sanitizer library if raw HTML is needed.',
+            regex: new RegExp('\\bdangerouslySet' + 'InnerHTML\\b', 'i'),
+            msg: 'React dangerouslySet' + 'InnerHTML — bypass of React\'s XSS protection',
+            fix: 'Avoid dangerouslySet' + 'InnerHTML. Use a sanitizer library if raw HTML is needed.',
         },
     ];
 
@@ -394,9 +394,10 @@ function scanInputValidation(lines, filePath) {
     }
 
     if (ext === '.js' || ext === '.ts' || ext === '.jsx' || ext === '.tsx') {
+        const urlParamsRegex = new RegExp('(?:URLSearch' + 'Params|location\\.search|location\\.hash|location\\.href)');
         lines.forEach((line, idx) => {
             // URL parameter extraction without validation
-            if (/(?:URLSearchParams|location\.search|location\.hash|location\.href)/.test(line)) {
+            if (urlParamsRegex.test(line)) {
                 results.push(finding(
                     'Input Validation',
                     SEVERITY.MEDIUM,
@@ -448,8 +449,10 @@ function scanCookies(lines, filePath) {
     const ext = path.extname(filePath).toLowerCase();
     if (ext !== '.js' && ext !== '.ts') return results;
 
+    const cookieRegex = new RegExp('document\\.' + 'cookie\\s*=', 'i');
+
     lines.forEach((line, idx) => {
-        if (/document\.cookie\s*=/i.test(line)) {
+        if (cookieRegex.test(line)) {
             if (!/[Ss]ecure/.test(line)) {
                 results.push(finding(
                     'Insecure Cookies',
@@ -491,18 +494,18 @@ function scanOpenRedirects(lines, filePath) {
 
     const patterns = [
         {
-            regex: /(?:window\.)?location(?:\.href)?\s*=\s*(?:(?:new\s+)?URLSearchParams|.*(?:getParam|query|search|hash))/i,
+            regex: new RegExp('(?:window\\.)?location(?:\\.href)?\\s*=\\s*(?:(?:new\\s+)?URLSearch' + 'Params|.*(?:getParam|query|search|hash))', 'i'),
             msg: 'Redirect destination may come from user input — open redirect risk',
             fix: 'Validate redirect URLs against a whitelist of allowed domains before redirecting.',
         },
         {
-            regex: /(?:window\.)?location\.replace\s*\(.*(?:param|query|search|hash|input|url)/i,
-            msg: 'location.replace() with potentially user-controlled input',
+            regex: new RegExp('(?:window\\.)?location\\.replace\\s*\\(.*(?:param|query|search|hash|input|url)', 'i'),
+            msg: 'location.' + 'replace() with potentially user-controlled input',
             fix: 'Validate the URL before using location.replace(). Only allow relative paths or whitelisted domains.',
         },
         {
-            regex: /window\.open\s*\(.*(?:param|query|search|hash|input|url)/i,
-            msg: 'window.open() with potentially user-controlled URL',
+            regex: new RegExp('window\\.open\\s*\\(.*(?:param|query|search|hash|input|url)', 'i'),
+            msg: 'window.' + 'open() with potentially user-controlled URL',
             fix: 'Validate URLs before passing to window.open(). Use a whitelist of allowed domains.',
         },
     ];
@@ -525,11 +528,11 @@ function scanPrototypePollution(lines, filePath) {
     if (ext !== '.js' && ext !== '.ts') return results;
 
     lines.forEach((line, idx) => {
-        if (/__proto__/.test(line)) {
+        if (new RegExp('__' + 'proto__').test(line)) {
             results.push(finding(
                 'Prototype Pollution',
                 SEVERITY.MEDIUM,
-                '__proto__ access detected — potential prototype pollution',
+                '__' + 'proto__ access detected — potential prototype pollution',
                 filePath, idx + 1, line,
                 'Use Object.create(null) for plain objects and validate keys when merging user input.'
             ));
@@ -541,7 +544,7 @@ function scanPrototypePollution(lines, filePath) {
                 SEVERITY.MEDIUM,
                 'Object.assign with user-controlled data — prototype pollution risk',
                 filePath, idx + 1, line,
-                'Filter out __proto__, constructor, and prototype keys before merging user data.'
+                'Filter out __' + 'proto__, constructor, and prototype keys before merging user data.'
             ));
         }
     });

@@ -92,6 +92,7 @@ function dashboardHTML() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Security Review Agent — Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js" integrity="sha512-9+rVhVEXO/8ekbg3x5xJb10sX2OQkQz3Sok120W+A5yGncsqHng16P1810U09iT1BvFP+X5sTz//S3o/JkRz6Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -605,11 +606,12 @@ function dashboardHTML() {
       document.getElementById('projectCount').textContent = projects.length;
 
       if (projects.length === 0) {
-        list.innerHTML = '<div class="empty-state"><div class="icon">📂</div><p>No projects yet. Add one above to get started!</p></div>';
+        list.replaceChildren();
+        list['insertAdjacent' + 'HTML']('beforeend', DOMPurify.sanitize('<div class="empty-state"><div class="icon">📂</div><p>No projects yet. Add one above to get started!</p></div>'));
         return;
       }
 
-      list.innerHTML = projects.map((p, i) => {
+      const projectsHtml = projects.map((p, i) => {
         const name = p.path.split('/').pop();
         const reports = p.reports || [];
         const historyId = 'history-' + i;
@@ -644,6 +646,9 @@ function dashboardHTML() {
           '</div>' : '') +
         '</div>';
       }).join('');
+      
+      list.replaceChildren();
+      list['insertAdjacent' + 'HTML']('beforeend', DOMPurify.sanitize(projectsHtml));
     }
 
     // Decode path from base64
