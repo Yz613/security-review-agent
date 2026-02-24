@@ -192,10 +192,17 @@ ${c.bold}Options:${c.reset}
 
     // --- Audit Trail Processing ---
     const auditFile = path.join(targetDir, '.security-audit.json');
-    let auditLog = {};
+    let auditLog = Object.create(null);
     if (fs.existsSync(auditFile)) {
         try {
-            auditLog = JSON.parse(fs.readFileSync(auditFile, 'utf-8'));
+            const parsed = JSON.parse(fs.readFileSync(auditFile, 'utf-8'));
+            if (typeof parsed === 'object' && parsed !== null &&
+                !Object.prototype.hasOwnProperty.call(parsed, '__proto__') &&
+                !Object.prototype.hasOwnProperty.call(parsed, 'constructor')) {
+                Object.assign(auditLog, parsed);
+            } else {
+                console.log(`  ${c.yellow}⚠ Invalid audit file structure. Starting fresh.${c.reset}`);
+            }
         } catch (e) {
             console.log(`  ${c.yellow}⚠ Failed to parse existing .security-audit.json. Starting fresh.${c.reset}`);
         }
@@ -210,9 +217,11 @@ ${c.bold}Options:${c.reset}
             auditLog[key].resolvedAt = new Date().toISOString();
 
             // Extract the new line of code that fixed the vulnerability
-            const filePath = path.join(targetDir, auditLog[key].file);
+            const filePath = path.resolve(targetDir, auditLog[key].file);
             let newCode = 'File or line unavailable';
-            if (fs.existsSync(filePath)) {
+
+            // Validate against path traversal
+            if (filePath.startsWith(targetDir + path.sep) && fs.existsSync(filePath)) {
                 try {
                     const lines = fs.readFileSync(filePath, 'utf-8').split('\n');
                     if (lines.length >= auditLog[key].line) {
@@ -229,7 +238,13 @@ ${c.bold}Options:${c.reset}
         const key = `${f.file}:${f.line}:${f.scanner}`;
         if (!auditLog[key]) {
             auditLog[key] = {
-                ...f,
+                scanner: String(f.scanner).substring(0, 1000),
+                severity: String(f.severity).substring(0, 1000),
+                message: String(f.message).substring(0, 1000),
+                file: String(f.file).substring(0, 1000),
+                line: Number(f.line) || 0,
+                code: String(f.code).substring(0, 1000),
+                remediation: String(f.remediation).substring(0, 1000),
                 status: 'OPEN',
                 firstSeen: new Date().toISOString()
             };

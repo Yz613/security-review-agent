@@ -811,6 +811,13 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const { path: projPath } = JSON.parse(body);
+        const projects = loadProjects();
+        if (!projects.find(p => p.path === projPath)) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Unauthorized project path' }));
+          return;
+        }
+
         const scan = scanProject(projPath);
 
         // Update last score

@@ -812,9 +812,9 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       <button class="action-btn secondary" onclick="rescanProject(this)">
         <span class="icon">🔄</span> Re-scan Project
       </button>
-      <a href="http://localhost:3847" class="action-btn secondary" style="text-decoration: none;">
+      <button class="action-btn secondary" onclick="window.location.href = window.location.protocol === 'http:' ? '/' : 'http://localhost:3847';" style="text-decoration: none;">
         <span class="icon">🏠</span> Back to Dashboard
-      </a>
+      </button>
     </div>
 
     <!-- Findings -->
@@ -890,16 +890,23 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
+    function setBtnContent(btn, iconText, btnText, iconClass) {
+      btn.replaceChildren();
+      const span = document.createElement('span');
+      span.className = iconClass;
+      span.textContent = iconText;
+      btn.appendChild(span);
+      btn.appendChild(document.createTextNode(' ' + btnText));
+    }
+
     function copyFix(btn, idx) {
       navigator.clipboard.writeText(fixPrompts[idx]).then(() => {
         btn.classList.add('copied');
-        btn.replaceChildren();
-        btn['insertAdjacent' + 'HTML']('beforeend', '<span class="fix-btn-icon">✅</span> Copied! Paste in Antigravity');
+        setBtnContent(btn, '✅', 'Copied! Paste in Antigravity', 'fix-btn-icon');
         showToast('Fix prompt copied — paste it in Antigravity to apply');
         setTimeout(() => {
           btn.classList.remove('copied');
-          btn.replaceChildren();
-          btn['insertAdjacent' + 'HTML']('beforeend', '<span class="fix-btn-icon">⚡</span> Fix with Antigravity');
+          setBtnContent(btn, '⚡', 'Fix with Antigravity', 'fix-btn-icon');
         }, 3000);
       });
     }
@@ -907,13 +914,11 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       if (!fixAllPrompt) return;
       navigator.clipboard.writeText(fixAllPrompt).then(() => {
         btn.classList.add('copied');
-        btn.replaceChildren();
-        btn['insertAdjacent' + 'HTML']('beforeend', '<span class="icon">✅</span> Copied! Paste in Antigravity');
+        setBtnContent(btn, '✅', 'Copied! Paste in Antigravity', 'icon');
         showToast('All fixes copied — paste in Antigravity to apply all');
         setTimeout(() => {
           btn.classList.remove('copied');
-          btn.replaceChildren();
-          btn['insertAdjacent' + 'HTML']('beforeend', '<span class="icon">⚡</span> Fix All');
+          setBtnContent(btn, '⚡', 'Fix All', 'icon');
         }, 3000);
       }).catch(err => {
         showToast('Failed to copy to clipboard', true);
@@ -924,13 +929,11 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       if (!howTo100Prompt) return;
       navigator.clipboard.writeText(howTo100Prompt).then(() => {
         btn.classList.add('copied');
-        btn.replaceChildren();
-        btn['insertAdjacent' + 'HTML']('beforeend', '<span class="icon">✅</span> Copied! Paste in Antigravity');
+        setBtnContent(btn, '✅', 'Copied! Paste in Antigravity', 'icon');
         showToast('Prompt copied — paste in Antigravity for a plan');
         setTimeout(() => {
           btn.classList.remove('copied');
-          btn.replaceChildren();
-          btn['insertAdjacent' + 'HTML']('beforeend', '<span class="icon">🚀</span> How to get to 100?');
+          setBtnContent(btn, '🚀', 'How to get to 100?', 'icon');
         }, 3000);
       }).catch(err => {
         showToast('Failed to copy to clipboard', true);
@@ -943,8 +946,7 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
         return;
       }
 
-      btn.replaceChildren();
-      btn['insertAdjacent' + 'HTML']('beforeend', '<span class="icon">⏳</span> Scanning...');
+      setBtnContent(btn, '⏳', 'Scanning...', 'icon');
       try {
         const res = await fetch(window.location.origin + '/api/scan', {
           method: 'POST',
@@ -955,14 +957,12 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
         if (data.error) throw new Error(data.error);
         
         btn.classList.add('success');
-        btn.replaceChildren();
-        btn['insertAdjacent' + 'HTML']('beforeend', '<span class="icon">✅</span> Scan Complete! Reloading...');
+        setBtnContent(btn, '✅', 'Scan Complete! Reloading...', 'icon');
         showToast('Scan complete! Reloading report...');
         setTimeout(() => window.location.reload(), 1500);
       } catch (e) {
         showToast('Scan failed: ' + e.message, true);
-        btn.replaceChildren();
-        btn['insertAdjacent' + 'HTML']('beforeend', '<span class="icon">🔄</span> Re-scan Project');
+        setBtnContent(btn, '🔄', 'Re-scan Project', 'icon');
       }
     }
     // Animate score ring on load
