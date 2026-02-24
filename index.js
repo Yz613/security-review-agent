@@ -291,6 +291,79 @@ ${c.bold}Options:${c.reset}
         console.log(`  ${c.dim}  INFO     ${c.reset} ${counts[SEVERITY.INFO]} findings`);
     }
 
+    // --- Category Status Checklist ---
+    const CATEGORIES = [
+        'XSS Vulnerabilities',
+        'Injection Vulnerabilities',
+        'Authentication & Session',
+        'CSRF Vulnerabilities',
+        'Broken Access Control',
+        'Cryptographic Failures',
+        'SSRF Vulnerabilities',
+        'XXE Injection',
+        'Prototype Pollution',
+        'Insecure Cookies',
+        'Hardcoded Secrets',
+        'Sensitive File Exposure',
+        'Data Exposure',
+        'Logging & Monitoring',
+        'Business Logic',
+        'API Security',
+        'Client-Side Security',
+        'Cloud Security',
+        'WebSocket Security',
+        'Open Redirects',
+        'CORS Misconfiguration',
+        'Missing Security Headers',
+        'Input Validation',
+        'Insecure HTTP',
+        'Dependency Risks',
+    ];
+
+    const severityOrder = [SEVERITY.CRITICAL, SEVERITY.HIGH, SEVERITY.MEDIUM, SEVERITY.LOW, SEVERITY.INFO];
+    const severityLabel = {
+        [SEVERITY.CRITICAL]: `${c.bgRed}${c.white} CRIT ${c.reset}`,
+        [SEVERITY.HIGH]: `${c.red} HIGH ${c.reset}`,
+        [SEVERITY.MEDIUM]: `${c.yellow}  MED ${c.reset}`,
+        [SEVERITY.LOW]: `${c.blue}  LOW ${c.reset}`,
+        [SEVERITY.INFO]: `${c.dim} INFO ${c.reset}`,
+    };
+
+    // Build per-category worst severity
+    const categoryWorstSeverity = {};
+    for (const f of allFindings) {
+        const cat = f.scanner;
+        if (!categoryWorstSeverity[cat]) {
+            categoryWorstSeverity[cat] = f.severity;
+        } else {
+            const existing = severityOrder.indexOf(categoryWorstSeverity[cat]);
+            const incoming = severityOrder.indexOf(f.severity);
+            if (incoming < existing) categoryWorstSeverity[cat] = f.severity;
+        }
+    }
+
+    console.log('');
+    console.log(`  ${c.bold}${c.cyan}Security Category Checklist:${c.reset}`);
+    console.log(`  ${c.dim}${'─'.repeat(52)}${c.reset}`);
+
+    const half = Math.ceil(CATEGORIES.length / 2);
+    for (let i = 0; i < half; i++) {
+        const left = CATEGORIES[i];
+        const right = CATEGORIES[i + half];
+
+        const renderItem = (cat) => {
+            if (!cat) return ' '.repeat(28);
+            const worstSev = categoryWorstSeverity[cat];
+            const isVuln = worstSev && worstSev !== SEVERITY.INFO;
+            const icon = isVuln ? `${c.red}✗${c.reset}` : `${c.green}✓${c.reset}`;
+            const label = cat.padEnd(24);
+            return `${icon} ${label}`;
+        };
+
+        console.log(`  ${renderItem(left)}   ${renderItem(right)}`);
+    }
+    console.log(`  ${c.dim}${'─'.repeat(52)}${c.reset}`);
+
     const fixableFindings = allFindings.filter(f => f.severity !== SEVERITY.INFO);
     if (fixableFindings.length > 0) {
         console.log(`\n  ${c.cyan}${c.bold}Detailed Findings:${c.reset}`);
