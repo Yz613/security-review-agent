@@ -83,6 +83,9 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
   // Build fix prompts array
   const fixableFindings = findings.filter(f => f.severity !== SEVERITY.INFO);
   const fixAllPrompt = fixableFindings.length > 0 ? buildFixAllPrompt(fixableFindings, absBasePath || targetDir) : '';
+  const howTo100Prompt = fixableFindings.length > 0
+    ? "I am aiming for a perfect 100 security score on this project. Please provide a comprehensive plan to fix the following issues and any other best practices I should implement:\n\n" + fixAllPrompt
+    : "I am aiming for a perfect 100 security score on this project. What are the best practices I should implement to maintain this?";
 
   const allPrompts = []; // Will be serialized into the page as JSON
   let findingIndex = 0;
@@ -360,46 +363,67 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       font-weight: 600;
     }
 
-    /* Fix All Button */
-    .fix-all-container {
+    /* Action Buttons */
+    .action-buttons-container {
       display: flex;
       justify-content: center;
+      gap: 16px;
       margin-bottom: 32px;
+      flex-wrap: wrap;
     }
 
-    .fix-all-btn {
+    .action-btn {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 14px 32px;
+      padding: 14px 24px;
       border: none;
       border-radius: 14px;
       font-family: 'Inter', sans-serif;
       font-size: 0.95rem;
       font-weight: 700;
-      color: #fff;
-      background: var(--accent-gradient);
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      box-shadow: 0 4px 20px rgba(102,126,234,0.3);
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s;
       letter-spacing: 0.01em;
     }
 
-    .fix-all-btn:hover {
+    .action-btn:hover {
       transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 8px 30px rgba(102,126,234,0.45);
     }
 
-    .fix-all-btn:active {
+    .action-btn:active {
       transform: translateY(0) scale(0.98);
     }
 
-    .fix-all-btn .icon {
+    .action-btn .icon {
       font-size: 1.2rem;
     }
 
-    .fix-all-btn.copied {
+    .action-btn.primary {
+      color: #fff;
+      background: var(--accent-gradient);
+      box-shadow: 0 4px 20px rgba(102,126,234,0.3);
+    }
+
+    .action-btn.primary:hover {
+      box-shadow: 0 8px 30px rgba(102,126,234,0.45);
+    }
+
+    .action-btn.secondary {
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .action-btn.secondary:hover {
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(255,255,255,0.25);
+    }
+
+    .action-btn.copied, .action-btn.success {
       background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+      border: none;
       box-shadow: 0 4px 20px rgba(34,197,94,0.3);
     }
 
@@ -602,19 +626,24 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       border-radius: 14px;
       padding: 14px 24px;
       color: #e2e8f0;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       font-weight: 500;
-      z-index: 1000;
+      z-index: 100;
       transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: 0 8px 32px rgba(0,0,0,0.4);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     .toast.show {
       transform: translateX(-50%) translateY(0);
     }
+    
+    .toast.error {
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
 
     .toast .toast-icon {
       font-size: 1.1rem;
@@ -736,14 +765,20 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       </div>
     </div>
 
-    ${fixableFindings.length > 0 ? `
-    <!-- Fix All -->
-    <div class="fix-all-container animate-in delay-2">
-      <button class="fix-all-btn" onclick="copyFixAll(this)">
-        <span class="icon">⚡</span> Fix All with Antigravity
+    <!-- Action Buttons -->
+    <div class="action-buttons-container animate-in delay-2">
+      ${fixableFindings.length > 0 ? `
+      <button class="action-btn primary" onclick="copyFixAll(this)">
+        <span class="icon">⚡</span> Fix All
+      </button>
+      <button class="action-btn secondary" onclick="copyHowTo100(this)">
+        <span class="icon">🚀</span> How to get to 100?
+      </button>
+      ` : ''}
+      <button class="action-btn secondary" onclick="rescanProject(this)">
+        <span class="icon">🔄</span> Re-scan Project
       </button>
     </div>
-    ` : ''}
 
     <!-- Findings -->
     <div class="findings-section animate-in delay-3">
@@ -771,12 +806,14 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
     // Fix prompts stored as JSON to avoid escaping issues
     const fixPrompts = ${safeJsonForScript(allPrompts)};
     const fixAllPrompt = ${safeJsonForScript(fixAllPrompt)};
+    const howTo100Prompt = ${safeJsonForScript(howTo100Prompt)};
+    const targetPath = ${safeJsonForScript(absBasePath || targetDir)};
 
-    function showToast(msg) {
+    function showToast(msg, isError = false) {
       const toast = document.getElementById('toast');
       const toastMsg = document.getElementById('toastMsg');
       toastMsg.textContent = msg;
-      toast.classList.add('show');
+      toast.className = isError ? 'toast error show' : 'toast show';
       setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
@@ -791,19 +828,61 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
         }, 3000);
       });
     }
-
     function copyFixAll(btn) {
+      if (!fixAllPrompt) return;
       navigator.clipboard.writeText(fixAllPrompt).then(() => {
         btn.classList.add('copied');
         btn.innerHTML = '<span class="icon">✅</span> Copied! Paste in Antigravity';
         showToast('All fixes copied — paste in Antigravity to apply all');
         setTimeout(() => {
           btn.classList.remove('copied');
-          btn.innerHTML = '<span class="icon">⚡</span> Fix All with Antigravity';
+          btn.innerHTML = '<span class="icon">⚡</span> Fix All';
         }, 3000);
+      }).catch(err => {
+        showToast('Failed to copy to clipboard', true);
       });
     }
 
+    function copyHowTo100(btn) {
+      if (!howTo100Prompt) return;
+      navigator.clipboard.writeText(howTo100Prompt).then(() => {
+        btn.classList.add('copied');
+        btn.innerHTML = '<span class="icon">✅</span> Copied! Paste in Antigravity';
+        showToast('Prompt copied — paste in Antigravity for a plan');
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<span class="icon">🚀</span> How to get to 100?';
+        }, 3000);
+      }).catch(err => {
+        showToast('Failed to copy to clipboard', true);
+      });
+    }
+
+    async function rescanProject(btn) {
+      if (window.location.protocol !== 'http:') {
+        showToast('Re-scan is only available when viewed through the Dashboard', true);
+        return;
+      }
+
+      btn.innerHTML = '<span class="icon">⏳</span> Scanning...';
+      try {
+        const res = await fetch(window.location.origin + '/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: targetPath }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        
+        btn.classList.add('success');
+        btn.innerHTML = '<span class="icon">✅</span> Scan Complete! Reloading...';
+        showToast('Scan complete! Reloading report...');
+        setTimeout(() => window.location.reload(), 1500);
+      } catch (e) {
+        showToast('Scan failed: ' + e.message, true);
+        btn.innerHTML = '<span class="icon">🔄</span> Re-scan Project';
+      }
+    }
     // Animate score ring on load
     document.addEventListener('DOMContentLoaded', () => {
       const ring = document.querySelector('.score-ring');
