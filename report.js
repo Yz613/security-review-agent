@@ -81,7 +81,7 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
   });
 
   // Build fix prompts array
-  const fixableFindings = findings.filter(f => f.severity !== SEVERITY.INFO);
+  const fixableFindings = findings.filter(f => f.severity !== SEVERITY.INFO && f.status !== 'RESOLVED');
   const fixAllPrompt = fixableFindings.length > 0 ? buildFixAllPrompt(fixableFindings, absBasePath || targetDir) : '';
   const howTo100Prompt = fixableFindings.length > 0
     ? "I am aiming for a perfect 100 security score on this project. Please provide a comprehensive plan to fix the following issues and any other best practices I should implement:\n\n" + fixAllPrompt
@@ -99,26 +99,43 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
     const config = SEVERITY_CONFIG[highestSev];
 
     const findingCards = catFindings.map(f => {
+      const isResolved = f.status === 'RESOLVED';
       const fConfig = SEVERITY_CONFIG[f.severity];
       const idx = findingIndex++;
       const isInfo = f.severity === SEVERITY.INFO;
-      if (!isInfo) {
-        allPrompts.push(buildFixPrompt(f, absBasePath || targetDir));
+
+      let promptText = '';
+      if (!isInfo && !isResolved) {
+        promptText = buildFixPrompt(f, absBasePath || targetDir);
+        allPrompts.push(promptText);
+      } else if (!isInfo && isResolved) {
+        // We still need to increment the prompt index to maintain mapping, but push empty string
+        allPrompts.push('');
       }
+
       return `
-        <div class="finding-card" style="border-left: 3px solid ${fConfig.color};">
+        <div class="finding-card ${isResolved ? 'resolved' : ''}" style="border-left: 3px solid ${fConfig.color};">
           <div class="finding-header">
-            <span class="severity-badge" style="background: ${fConfig.bg}; color: ${fConfig.color}; border: 1px solid ${fConfig.border};">
-              ${fConfig.emoji} ${fConfig.label}
-            </span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span class="severity-badge" style="background: ${fConfig.bg}; color: ${fConfig.color}; border: 1px solid ${fConfig.border};">
+                ${fConfig.emoji} ${fConfig.label}
+              </span>
+              ${isResolved ? '<span class="resolved-badge">✓ RESOLVED</span>' : ''}
+            </div>
             <span class="finding-location">${escapeHtml(f.file)}:${f.line}</span>
           </div>
           <p class="finding-message">${escapeHtml(f.message)}</p>
           <div class="code-block"><code>${escapeHtml(f.code)}</code></div>
+          ${isResolved ? `
+          <div class="remediation" style="background: rgba(34, 197, 94, 0.08); border-left-color: rgba(34, 197, 94, 0.4);">
+             <strong style="color: #4ade80;">✓ Fix Applied:</strong><br>
+             <code style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #a3e635; white-space: pre-wrap;">${escapeHtml(f.fixApplied || 'Line deleted / resolved.')}</code>
+          </div>` : `
           <div class="remediation">
             <strong>💡 Fix:</strong> ${escapeHtml(f.remediation)}
           </div>
-          ${!isInfo ? `<button class="fix-btn" data-idx="${idx}" onclick="copyFix(this, ${idx})">
+          `}
+          ${(!isInfo && !isResolved) ? `<button class="fix-btn" data-idx="${idx}" onclick="copyFix(this, ${idx})">
             <span class="fix-btn-icon">⚡</span> Fix with Antigravity
           </button>` : ''}
         </div>`;
@@ -504,20 +521,32 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
     /* Finding Cards */
     .finding-card {
       background: var(--bg-secondary);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 16px 20px;
-      transition: background 0.2s;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
     }
 
     .finding-card:hover {
       background: rgba(255,255,255,0.03);
     }
 
+    .finding-card.resolved {
+      opacity: 0.65;
+      border-color: rgba(34, 197, 94, 0.3);
+      filter: grayscale(0.5);
+    }
+
+    .finding-card.resolved .remediation, .finding-card.resolved .code-block, .finding-card.resolved .finding-message {
+      text-decoration: line-through;
+    }
+
     .finding-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
+      align-items: flex-start;
+      margin-bottom: 12px;
       flex-wrap: wrap;
       gap: 8px;
     }
@@ -821,7 +850,7 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
     function exportCSV(btn) {
       if (!rawFindings || rawFindings.length === 0) return;
       
-      const headers = ['Severity', 'Category', 'File', 'Line', 'Issue', 'Fix'];
+      const headers = ['Status', 'Severity', 'Category', 'File', 'Line', 'Issue', 'Fix Suggestion', 'Fix Applied'];
       const escapeCSV = (str) => {
         if (str == null) return '""';
         const s = String(str).replace(/"/g, '""');
@@ -829,12 +858,14 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       };
 
       const rows = rawFindings.map(f => [
+        escapeCSV(f.status || 'OPEN'),
         escapeCSV(f.severity.toUpperCase()),
         escapeCSV(f.scanner),
         escapeCSV(f.file),
         escapeCSV(f.line),
         escapeCSV(f.message),
-        escapeCSV(f.remediation)
+        escapeCSV(f.remediation),
+        escapeCSV(f.fixApplied || '')
       ].join(','));
 
       const csvContent = headers.join(',') + '\\n' + rows.join('\\n');

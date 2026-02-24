@@ -190,6 +190,70 @@ ${c.bold}Options:${c.reset}
     console.log(`  ${c.green}✓ Scanned ${scannedCount} files in ${scanDuration}ms${c.reset}`);
     console.log('');
 
+    // --- Audit Trail Processing ---
+    const auditFile = path.join(targetDir, '.security-audit.json');
+    let auditLog = {};
+    if (fs.existsSync(auditFile)) {
+        try {
+            auditLog = JSON.parse(fs.readFileSync(auditFile, 'utf-8'));
+        } catch (e) {
+            console.log(`  ${c.yellow}⚠ Failed to parse existing .security-audit.json. Starting fresh.${c.reset}`);
+        }
+    }
+
+    // 1. Mark existing findings as RESOLVED if they are missing from the current scan
+    const currentFindingKeys = new Set(allFindings.map(f => `${f.file}:${f.line}:${f.scanner}`));
+
+    for (const key in auditLog) {
+        if (auditLog[key].status === 'OPEN' && !currentFindingKeys.has(key)) {
+            auditLog[key].status = 'RESOLVED';
+            auditLog[key].resolvedAt = new Date().toISOString();
+
+            // Extract the new line of code that fixed the vulnerability
+            const filePath = path.join(targetDir, auditLog[key].file);
+            let newCode = 'File or line unavailable';
+            if (fs.existsSync(filePath)) {
+                try {
+                    const lines = fs.readFileSync(filePath, 'utf-8').split('\n');
+                    if (lines.length >= auditLog[key].line) {
+                        newCode = lines[auditLog[key].line - 1].trim();
+                    }
+                } catch (e) { }
+            }
+            auditLog[key].fixApplied = newCode || 'Line deleted / empty';
+        }
+    }
+
+    // 2. Insert or update the current findings
+    for (const f of allFindings) {
+        const key = `${f.file}:${f.line}:${f.scanner}`;
+        if (!auditLog[key]) {
+            auditLog[key] = {
+                ...f,
+                status: 'OPEN',
+                firstSeen: new Date().toISOString()
+            };
+        } else if (auditLog[key].status === 'RESOLVED') {
+            // It regressed
+            auditLog[key].status = 'OPEN';
+            auditLog[key].reopenedAt = new Date().toISOString();
+            delete auditLog[key].fixApplied;
+        }
+    }
+
+    // Convert map back to array & explicitly write disk payload
+    const completeAuditTrail = Object.values(auditLog).sort((a, b) => {
+        if (a.status !== b.status) return a.status === 'OPEN' ? -1 : 1;
+        const severityOrder = { critical: 1, high: 2, medium: 3, low: 4, info: 5 };
+        return severityOrder[a.severity] - severityOrder[b.severity];
+    });
+
+    try {
+        fs.writeFileSync(auditFile, JSON.stringify(auditLog, null, 2), 'utf-8');
+    } catch (e) {
+        console.log(`  ${c.yellow}⚠ Failed to write .security-audit.json to target directory.${c.reset}`);
+    }
+
     // Score display
     const scoreColor = score >= 75 ? c.green : score >= 50 ? c.yellow : c.red;
     console.log(`  ${c.bold}Security Score: ${scoreColor}${score}/100 (${gradeInfo.grade})${c.reset}`);
@@ -240,11 +304,25 @@ ${c.bold}Options:${c.reset}
         console.log(`  ${c.green}${c.bold}✅ No actionable security vulnerabilities found (only INFO-level notes).${c.reset}`);
     }
 
+    if (true) {
+        // Print out the newly resolved items
+        const justResolved = completeAuditTrail.filter(f => f.status === 'RESOLVED' && f.resolvedAt && (new Date() - new Date(f.resolvedAt) < 60000));
+
+        if (justResolved.length > 0) {
+            console.log(`\n  ${c.green}${c.bold}🎉 Great job! You resolved ${justResolved.length} issue(s) since the last scan!${c.reset}`);
+            justResolved.forEach((f, i) => {
+                console.log(`  ${i + 1}. [RESOLVED] ${f.message}`);
+                console.log(`     ${c.dim}File: ${f.file}:${f.line}${c.reset}`);
+                console.log(`     ${c.green}Fix Applied: ${f.fixApplied.trim()}${c.reset}`);
+            });
+        }
+    }
+
     console.log('');
 
     // Generate report
     const displayDir = path.basename(targetDir);
-    const reportHTML = generateReport(allFindings, scannedCount, displayDir, score, gradeInfo, scanDuration, targetDir);
+    const reportHTML = generateReport(completeAuditTrail, scannedCount, displayDir, score, gradeInfo, scanDuration, targetDir);
 
     // Write report
     const outputPath = path.resolve(outputFile);
