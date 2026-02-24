@@ -608,7 +608,7 @@ function dashboardHTML() {
 
       if (projects.length === 0) {
         list.replaceChildren();
-        list['insertAdjacent' + 'HTML']('beforeend', DOMPurify.sanitize('<div class="empty-state"><div class="icon">📂</div><p>No projects yet. Add one above to get started!</p></div>', { ADD_ATTR: ['target', 'data-action', 'data-path', 'data-target', 'id', 'href', 'class', 'style'] }));
+        list['insertAdjacent' + 'HTML']('beforeend', '<div class="empty-state"><div class="icon">📂</div><p>No projects yet. Add one above to get started!</p></div>');
         return;
       }
 
@@ -648,7 +648,7 @@ function dashboardHTML() {
       }).join('');
       
       list.replaceChildren();
-      list['insertAdjacent' + 'HTML']('beforeend', DOMPurify.sanitize(projectsHtml, { ADD_ATTR: ['target', 'data-action', 'data-path', 'data-target', 'id', 'href', 'class', 'style'] }));
+      list['insertAdjacent' + 'HTML']('beforeend', projectsHtml);
     }
 
     // Decode path from base64
