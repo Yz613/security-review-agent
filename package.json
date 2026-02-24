@@ -1,0 +1,14 @@
+{
+  "name": "security-review-agent",
+  "version": "1.0.0",
+  "description": "A security review agent for vibe-coded web apps. Scans HTML/JS/CSS for vulnerabilities and generates a beautiful HTML report.",
+  "main": "index.js",
+  "bin": {
+    "security-review": "./index.js"
+  },
+  "scripts": {
+    "scan": "node index.js"
+  },
+  "keywords": ["security", "scanner", "web", "vulnerability"],
+  "license": "MIT"
+}
