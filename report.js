@@ -780,6 +780,9 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       <button class="action-btn secondary" onclick="rescanProject(this)">
         <span class="icon">🔄</span> Re-scan Project
       </button>
+      <a href="http://localhost:3847" class="action-btn secondary" style="text-decoration: none;">
+        <span class="icon">🏠</span> Back to Dashboard
+      </a>
     </div>
 
     <!-- Findings -->

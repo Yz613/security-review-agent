@@ -212,8 +212,34 @@ ${c.bold}Options:${c.reset}
         console.log(`  ${c.dim}  INFO     ${c.reset} ${counts[SEVERITY.INFO]} findings`);
     }
 
-    if (allFindings.length === 0) {
+    const fixableFindings = allFindings.filter(f => f.severity !== SEVERITY.INFO);
+    if (fixableFindings.length > 0) {
+        console.log(`\n  ${c.cyan}${c.bold}Detailed Findings (Top 10):${c.reset}`);
+
+        // Sort by severity (highest first)
+        fixableFindings.sort((a, b) => {
+            const order = [SEVERITY.CRITICAL, SEVERITY.HIGH, SEVERITY.MEDIUM, SEVERITY.LOW];
+            return order.indexOf(a.severity) - order.indexOf(b.severity);
+        });
+
+        fixableFindings.slice(0, 10).forEach((f, i) => {
+            let color = '';
+            if (f.severity === SEVERITY.CRITICAL) color = c.bgRed + c.white;
+            else if (f.severity === SEVERITY.HIGH) color = c.red;
+            else if (f.severity === SEVERITY.MEDIUM) color = c.yellow;
+            else color = c.blue;
+
+            console.log(`  ${i + 1}. ${color}[${f.severity.toUpperCase()}]${c.reset} ${f.message}`);
+            console.log(`     ${c.dim}File: ${f.file}:${f.line}${c.reset}`);
+            console.log(`     ${c.green}Fix : ${f.remediation}${c.reset}`);
+        });
+        if (fixableFindings.length > 10) {
+            console.log(`     ${c.dim}... and ${fixableFindings.length - 10} more findings. View HTML report for full details.${c.reset}`);
+        }
+    } else if (allFindings.length === 0) {
         console.log(`  ${c.green}${c.bold}✅ No security issues found!${c.reset}`);
+    } else {
+        console.log(`  ${c.green}${c.bold}✅ No actionable security vulnerabilities found (only INFO-level notes).${c.reset}`);
     }
 
     console.log('');
