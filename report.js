@@ -773,6 +773,9 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
       <button class="action-btn primary" onclick="copyFixAll(this)">
         <span class="icon">⚡</span> Fix All
       </button>
+      <button class="action-btn secondary" onclick="exportCSV(this)">
+        <span class="icon">📥</span> Export CSV
+      </button>
       <button class="action-btn secondary" onclick="copyHowTo100(this)">
         <span class="icon">🚀</span> How to get to 100?
       </button>
@@ -809,10 +812,44 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
 
   <script>
     // Fix prompts stored as JSON to avoid escaping issues
+    const rawFindings = ${safeJsonForScript(findings)};
     const fixPrompts = ${safeJsonForScript(allPrompts)};
     const fixAllPrompt = ${safeJsonForScript(fixAllPrompt)};
     const howTo100Prompt = ${safeJsonForScript(howTo100Prompt)};
     const targetPath = ${safeJsonForScript(absBasePath || targetDir)};
+
+    function exportCSV(btn) {
+      if (!rawFindings || rawFindings.length === 0) return;
+      
+      const headers = ['Severity', 'Category', 'File', 'Line', 'Issue', 'Fix'];
+      const escapeCSV = (str) => {
+        if (str == null) return '""';
+        const s = String(str).replace(/"/g, '""');
+        return '"' + s + '"';
+      };
+
+      const rows = rawFindings.map(f => [
+        escapeCSV(f.severity.toUpperCase()),
+        escapeCSV(f.scanner),
+        escapeCSV(f.file),
+        escapeCSV(f.line),
+        escapeCSV(f.message),
+        escapeCSV(f.remediation)
+      ].join(','));
+
+      const csvContent = headers.join(',') + '\\n' + rows.join('\\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'security-report.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showToast('CSV Exported Successfully');
+    }
 
     function showToast(msg, isError = false) {
       const toast = document.getElementById('toast');
