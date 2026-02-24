@@ -74,6 +74,7 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
   for (const f of findings) {
     if (f.status !== 'RESOLVED') counts[f.severity]++;
   }
+  const resolvedCount = findings.filter(f => f.status === 'RESOLVED').length;
 
   const sortedCategories = Object.keys(grouped).sort((a, b) => {
     const severityOrder = [SEVERITY.CRITICAL, SEVERITY.HIGH, SEVERITY.MEDIUM, SEVERITY.LOW, SEVERITY.INFO];
@@ -752,7 +753,7 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
         <span>📅 ${now}</span>
         <span>📁 ${scannedFiles} files scanned</span>
         <span>⏱️ ${scanDuration}ms</span>
-        <span>🔍 ${findings.filter(f => f.status !== 'RESOLVED').length} open findings</span>
+        <span>🔍 ${findings.filter(f => f.status !== 'RESOLVED').length} open${resolvedCount > 0 ? ` &bull; <span style="color:#22c55e">✓ ${resolvedCount} resolved</span>` : ''}</span>
       </div>
     </header>
 
@@ -796,6 +797,11 @@ function generateReport(findings, scannedFiles, targetDir, score, gradeInfo, sca
         <div class="count" style="color: ${SEVERITY_CONFIG[SEVERITY.INFO].color}">${counts[SEVERITY.INFO]}</div>
         <div class="label" style="color: ${SEVERITY_CONFIG[SEVERITY.INFO].color}">Info</div>
       </div>
+      ${resolvedCount > 0 ? `
+      <div class="summary-card" style="border-bottom: 3px solid #22c55e">
+        <div class="count" style="color: #22c55e">${resolvedCount}</div>
+        <div class="label" style="color: #22c55e">Resolved ✓</div>
+      </div>` : ''}
     </div>
 
     <!-- Action Buttons -->
