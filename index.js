@@ -214,7 +214,7 @@ ${c.bold}Options:${c.reset}
 
     const fixableFindings = allFindings.filter(f => f.severity !== SEVERITY.INFO);
     if (fixableFindings.length > 0) {
-        console.log(`\n  ${c.cyan}${c.bold}Detailed Findings (Top 10):${c.reset}`);
+        console.log(`\n  ${c.cyan}${c.bold}Detailed Findings:${c.reset}`);
 
         // Sort by severity (highest first)
         fixableFindings.sort((a, b) => {
@@ -222,7 +222,7 @@ ${c.bold}Options:${c.reset}
             return order.indexOf(a.severity) - order.indexOf(b.severity);
         });
 
-        fixableFindings.slice(0, 10).forEach((f, i) => {
+        fixableFindings.forEach((f, i) => {
             let color = '';
             if (f.severity === SEVERITY.CRITICAL) color = c.bgRed + c.white;
             else if (f.severity === SEVERITY.HIGH) color = c.red;
@@ -231,11 +231,9 @@ ${c.bold}Options:${c.reset}
 
             console.log(`  ${i + 1}. ${color}[${f.severity.toUpperCase()}]${c.reset} ${f.message}`);
             console.log(`     ${c.dim}File: ${f.file}:${f.line}${c.reset}`);
+            console.log(`     ${c.red}Code: ${f.code.trim()}${c.reset}`);
             console.log(`     ${c.green}Fix : ${f.remediation}${c.reset}`);
         });
-        if (fixableFindings.length > 10) {
-            console.log(`     ${c.dim}... and ${fixableFindings.length - 10} more findings. View HTML report for full details.${c.reset}`);
-        }
     } else if (allFindings.length === 0) {
         console.log(`  ${c.green}${c.bold}✅ No security issues found!${c.reset}`);
     } else {

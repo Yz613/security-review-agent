@@ -45,11 +45,12 @@ function scanProject(projectPath) {
 
   try {
     const indexPath = path.join(__dirname, 'index.js');
-    execSync(`node "${indexPath}" "${projectPath}" --output "${reportFile}"`, {
+    const output = execSync(`node "${indexPath}" "${projectPath}" --output "${reportFile}"`, {
       cwd: __dirname,
       timeout: 30000,
       encoding: 'utf-8',
     });
+    console.log(output);
 
     // Parse score from the report file
     let score = null;
