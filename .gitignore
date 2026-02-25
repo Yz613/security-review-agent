@@ -3,3 +3,5 @@ reports/
 projects.json
 security-report.html
 *.DS_Store
+.env
+data/
